@@ -108,27 +108,6 @@ public class Main {
 		System.out.println("-------------");
 		
 		Main m = new Main();
-		m.setupFile(path);
-		m.fReader.setFilePath(path);
-		m.fReader.setupBuff(4, 7);
-		
-		m.genBinFile(20);	// create bin file
-		
-		System.out.println("Blocks");
-		System.out.println("-----------");
-		m.fReader.readBlocksFromFile();
-		
-		m.getSample(path, 0.4);
-		
-		
-//		Integer[] v1 = m.genIntVet(3);
-//		Pipe p = new Pipe(5);
-//		p.printBuffer();
-//		p.writeBlock(v1);
-//		p.printBuffer();
-//		p.readBlock();
-//		p.printBuffer();
-		
 		
 		System.exit(0);
 	}

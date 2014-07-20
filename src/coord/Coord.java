@@ -5,7 +5,8 @@ import java.io.ObjectInputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 
 public class Coord {
@@ -13,11 +14,13 @@ public class Coord {
 	public Socket socket;
 	public LinkedList<String> hostsAddress;
 	public ArrayList<Integer> allSamples;
+	public HashMap<String, Integer> mapProcess;
 	public Integer nProcess = 0;
 
 	public Coord() {
 		hostsAddress = new LinkedList<String>();
 		allSamples = new ArrayList<Integer>();
+		mapProcess = new HashMap<String, Integer>();
 	}
 	
 	public ArrayList<Integer> defineLimits(ArrayList<Integer> list, Integer n_process) {
@@ -29,8 +32,7 @@ public class Coord {
 		return inter_limits;
 	}
 	
-	@SuppressWarnings("unchecked")
-	public void defineBuckets() {
+	public void setProcess() {
 		for(String s : hostsAddress) {
 			String[] fields = s.split(":");
 			String ip = fields[0];
@@ -38,8 +40,10 @@ public class Coord {
 			try {
 				socket = new Socket(ip, port);
 				ObjectInputStream input = new ObjectInputStream( socket.getInputStream() );
+				int n = (Integer) input.readObject();
 				
-				nProcess += (Integer) input.readObject();
+				mapProcess.put(ip, n);
+				nProcess += n;
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
@@ -48,7 +52,10 @@ public class Coord {
 				e.printStackTrace();
 			}
 		}
-		
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void defineBuckets() {
 		for(String s : hostsAddress) {
 			String[] fields = s.split(":");
 			String ip = fields[0];
@@ -69,9 +76,10 @@ public class Coord {
 				e.printStackTrace();
 			}
 		}
-		
-		allSamples.sort(null);
+		Collections.sort(allSamples);
 		ArrayList<Integer> limits = defineLimits(allSamples, nProcess);
+		
+		
 	}
 
 }
