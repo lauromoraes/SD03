@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
 
 public class FReader extends Thread {
 	
@@ -12,7 +13,7 @@ public class FReader extends Thread {
 	public RandomAccessFile rFile = null;
 	public String fPath;
 	public double sampleRate = 0.01;
-	public Integer[] samples = null;
+	public ArrayList<Integer> samples;
 
 	public FReader(String fPath) {
 		this.fPath = fPath;
@@ -23,7 +24,7 @@ public class FReader extends Thread {
 		}
 	}
 	
-	public Integer[] getSamples() {
+	public ArrayList<Integer> getSamples() {
 		return this.samples;
 	}
 	
@@ -41,7 +42,7 @@ public class FReader extends Thread {
 			long fSize = this.rFile.length();
 			fSize = fSize / 4;
 			int nSamples = Math.max(1, (int) (fSize * sampleRate) );
-			samples = new Integer[nSamples];
+			samples = new ArrayList<Integer>(nSamples);
 			
 			double sFile;
 			sFile = (double) fSize / nSamples;	// get range size
@@ -52,7 +53,7 @@ public class FReader extends Thread {
 				rFile.seek(fIndex * 4);
 				int val = rFile.readInt();
 				//System.out.printf("i: %d - val: %d\n", i , val);
-				samples[i] = val;
+				samples.add(val);
 			}
 			rFile.close();
 		} catch (IOException e) {

@@ -1,11 +1,15 @@
 package main;
 
+import host.Host;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
+
+import coord.Coord;
 import freader.FReader;
 
 public class Main {
@@ -50,9 +54,9 @@ public class Main {
 		}
 	}
 	
-	public Integer[] getSample(String path, double sampleRate) {
+	public ArrayList<Integer> getSample(String path, double sampleRate) {
 		boolean deb = true;
-		Integer[] sample = null;
+		ArrayList<Integer> sample = null;
 		
 		fReader.sampling(sampleRate);
 		sample = fReader.getSamples();
@@ -96,9 +100,22 @@ public class Main {
 		}
 		scanner.close();
 	}
+	
+	public void coord_app() {
+		System.out.println("Coord>>>");
+		Coord coord = new Coord();
+		
+	}
+	
+	public void host_app(String address, String path) {
+		System.out.println("Host>>>");
+		Host host = new Host();
+		host.setupHost(address, path);
+		
+	}
 
 	public static void main(String[] args) {
-		String path = "D:\\workspace3\\SD3-00\\input.bin";
+		String path = "input.bin";
 		
 		
 		System.out.println("Main");
@@ -106,8 +123,44 @@ public class Main {
 			System.out.println("MAIN> " + a);
 		}
 		System.out.println("-------------");
-		
+
 		Main m = new Main();
+		
+		String key[] = {"1", "200.239.134.93:6969"};
+		switch (key[0]) {
+		case "0":
+			m.coord_app();
+			break;
+		case "1":
+			m.host_app(key[1], path);
+			break;
+
+		default:
+			break;
+		}
+		
+		
+//		m.setupFile(path);
+//		m.fReader.setFilePath(path);
+//		m.fReader.setupBuff(4, 7);
+//		
+//		m.genBinFile(20);	// create bin file
+//		
+//		System.out.println("Blocks");
+//		System.out.println("-----------");
+//		m.fReader.readBlocksFromFile();
+//		
+//		m.getSample(path, 0.4);
+		
+		
+//		Integer[] v1 = m.genIntVet(3);
+//		Pipe p = new Pipe(5);
+//		p.printBuffer();
+//		p.writeBlock(v1);
+//		p.printBuffer();
+//		p.readBlock();
+//		p.printBuffer();
+		
 		
 		System.exit(0);
 	}

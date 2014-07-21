@@ -1,82 +1,100 @@
 package host;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Enumeration;
 
+import op.OpCode;
+import pipe.SocketPipe;
+import coord.Listener;
 import freader.FReader;
 
 public class Host extends Thread {
 	
 	public Socket socket;
-	public ServerSocket listener;
+	public ServerSocket ss;
 	public boolean isFinished;
 	public Integer state;
 	public FReader reader;
 	public double sampleRate;
+	public String coord_address;
+	public Listener listener;
+	public SocketPipe socketPipe;
+	public String address;
 
 	public Host() {
 		socket = null;
-		listener = null;
+		ss = null;
 		isFinished = false;
 		state = 0;
 		sampleRate = 0.2;
+		socketPipe = new SocketPipe();
+		address = getIp() + ":" + 6969;
 	}
 	
-	public void setupHost(String fPath) {
+	public String getIp() {
+		try {
+			Enumeration<NetworkInterface> i = NetworkInterface.getNetworkInterfaces();
+			while(i.hasMoreElements()) {
+				NetworkInterface n = i.nextElement();
+				Enumeration<InetAddress> e = n.getInetAddresses();
+				while(e.hasMoreElements()) {
+					InetAddress a = e.nextElement();
+					if(a instanceof Inet4Address && !a.getHostAddress().startsWith("127")) {
+						return a.getHostAddress();
+						
+					}
+				}
+			}
+		} catch (SocketException e1) {
+			e1.printStackTrace();
+		}
+		return null;
+	}
+	
+	public void setupHost(String address, String fPath) {
 		reader = new FReader(fPath);
 		try {
-			listener = new ServerSocket(6969);
+			ss = new ServerSocket(6969);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		coord_address = address;
+		listener = new Listener(ss, socketPipe);
 	}
 	
-	public void action(Socket s) {
-		switch (state) {
-		case 0:
-			try {
-				ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream());
-				Integer n = getProcessors();
-				out.writeInt(n);
-				state = 1;
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			break;
-		
-		case 1:
-			try {
-				ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream());
-				out.writeObject( samples() );
-				this.state = 2;
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			break;
-
-		default:
-			System.err.println("Invalid Code.");
-			break;
-		}
+	public void start_host() {
+		first_communication();
+		listener.start();
 	}
 	
 	public void mainLoop() {
 		while(!isFinished) {
+			Socket s = socketPipe.read_buffer();
 			try {
-				listener.setSoTimeout(2000);
-				Socket s = listener.accept();
-				action(s);
-				
+				ObjectInputStream in = new ObjectInputStream(s.getInputStream());
+				Object[] o = (Object[])in.readObject();
+				if((OpCode)o[0] == OpCode.START_SAMPLE) {
+					send_samples();
+				}
 			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
 			}
 		}
-		if(listener != null) {
+		if(ss != null) {
 			try {
-				listener.close();
+				ss.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -89,15 +107,59 @@ public class Host extends Thread {
 		return n;
 	}
 	
-	public Integer[] samples() {
+	public ArrayList<Integer> samples() {
 		reader.sampling(sampleRate);
-		Integer[] s =  reader.getSamples();
+		ArrayList<Integer> s =  reader.getSamples();
 		return s;
 	}
 	
 	@Override
 	public void run() {
-		
+		mainLoop();
 	}
 
+	public void first_communication() {
+		String[] fields = coord_address.split(":");
+		String ip = fields[0];
+		Integer port = Integer.parseInt(fields[1]);
+		try {
+			socket = new Socket(ip, port);
+			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+			Integer n = getProcessors();
+			Object[] o = {OpCode.REGISTER, address, n};
+			out.writeObject(o);
+			out.close();
+			out = null;
+			socket.close();
+			socket = null;
+			
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void send_samples() {
+
+		String[] fields = coord_address.split(":");
+		String ip = fields[0];
+		Integer port = Integer.parseInt(fields[1]);
+		try {
+			socket = new Socket(ip, port);
+			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+			ArrayList<Integer> n = samples();
+			Object[] o = {OpCode.SEND_SAMPLE, address, n};
+			out.writeObject(n);
+			out.close();
+			out = null;
+			socket.close();
+			socket = null;
+			
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 }
