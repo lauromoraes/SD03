@@ -104,7 +104,9 @@ public class Main {
 	public void coord_app() {
 		System.out.println("Coord>>>");
 		Coord coord = new Coord();
-		
+		coord.setupCoord();
+		coord.start_coord();
+		coord.mainLoop();
 	}
 	
 	public void host_app(String address, String path) {
@@ -116,8 +118,7 @@ public class Main {
 
 	public static void main(String[] args) {
 		String path = "input.bin";
-		
-		
+
 		System.out.println("Main");
 		for(String a : args) {
 			System.out.println("MAIN> " + a);
@@ -138,30 +139,6 @@ public class Main {
 		default:
 			break;
 		}
-		
-		
-//		m.setupFile(path);
-//		m.fReader.setFilePath(path);
-//		m.fReader.setupBuff(4, 7);
-//		
-//		m.genBinFile(20);	// create bin file
-//		
-//		System.out.println("Blocks");
-//		System.out.println("-----------");
-//		m.fReader.readBlocksFromFile();
-//		
-//		m.getSample(path, 0.4);
-		
-		
-//		Integer[] v1 = m.genIntVet(3);
-//		Pipe p = new Pipe(5);
-//		p.printBuffer();
-//		p.writeBlock(v1);
-//		p.printBuffer();
-//		p.readBlock();
-//		p.printBuffer();
-		
-		
 		System.exit(0);
 	}
 
