@@ -25,14 +25,17 @@ public class SocketPipe {
 
 	public synchronized Socket read_buffer() {
 		Socket data = null;
-		if(!is_empty()) {
-			data = buffer.poll();
-		} else {
-			if(!is_finished()) {
-				try {
-					wait();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+		while(!finished) {
+			if(!is_empty()) {
+				data = buffer.poll();
+				return data;
+			} else {
+				if(!is_finished()) {
+					try {
+						wait();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 				}
 			}
 		}

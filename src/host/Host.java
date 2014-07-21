@@ -12,6 +12,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.Scanner;
 
 import op.OpCode;
 import pipe.SocketPipe;
@@ -79,25 +80,23 @@ public class Host extends Thread {
 	
 	public void mainLoop() {
 		while(!isFinished) {
-			Socket s = socketPipe.read_buffer();
-			try {
-				ObjectInputStream in = new ObjectInputStream(s.getInputStream());
-				Object[] o = (Object[])in.readObject();
-				if((OpCode)o[0] == OpCode.START_SAMPLE) {
-					send_samples();
+			Scanner scanner = new Scanner(System.in);
+			while(!isFinished) {
+				String line = scanner.nextLine();
+
+				if(line.matches("(end|quit|exit)")) {
+					System.out.println("Saindo...");
+					listener.setFinished();
+					isFinished = true;
+					continue;
+				} else if(line.matches("((\\d){1,3}\\.){3}(\\d){1,3}:(\\d){4,5}")) {
+					System.out.println("connectando a " + line);
+					continue;
+				} else {
+					System.err.println("Invalid Command.");
 				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
 			}
-		}
-		if(ss != null) {
-			try {
-				ss.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			scanner.close();
 		}
 	}
 	
@@ -110,29 +109,64 @@ public class Host extends Thread {
 	public ArrayList<Integer> samples() {
 		reader.sampling(sampleRate);
 		ArrayList<Integer> s =  reader.getSamples();
+		System.out.println("Samples " + s);
 		return s;
 	}
 	
 	@Override
 	public void run() {
-		mainLoop();
+		while(!isFinished) {
+			Socket s = socketPipe.read_buffer();
+			switch (state) {
+			case 0:
+				try {
+					ObjectInputStream in = new ObjectInputStream(s.getInputStream());
+					Object[] o = (Object[])in.readObject();
+					in.close();
+					if((OpCode)o[0] == OpCode.START_SAMPLE) {
+						String address = (String)o[1];
+						
+						Socket s2 = new Socket(address, 6969);
+						ObjectOutputStream out = new ObjectOutputStream(s2.getOutputStream());
+						Object[] response = {OpCode.SEND_SAMPLE, address, samples()};
+						out.writeObject(response);
+						s2.close();
+						
+						System.out.println("sended");
+					} else {
+						System.out.println("Invalid OpCode: " + o[0]);
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+				}
+				break;
+	
+			default:
+				System.err.println("Invalid Code.");
+				break;
+			}
+		}
 	}
 
 	public void first_communication() {
 		String[] fields = coord_address.split(":");
 		String ip = fields[0];
 		Integer port = Integer.parseInt(fields[1]);
+		System.out.println("Connect to coord: " + coord_address);
 		try {
 			socket = new Socket(ip, port);
 			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
 			Integer n = getProcessors();
+			System.out.println("N " + n);
 			Object[] o = {OpCode.REGISTER, address, n};
 			out.writeObject(o);
 			out.close();
 			out = null;
 			socket.close();
 			socket = null;
-			
+			System.out.println("Connection done;");
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {

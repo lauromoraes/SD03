@@ -17,6 +17,10 @@ public class Listener extends Thread {
 		this.listener = listener;
 		this.socket_pipe = socket_pipe;
 	}
+	
+	public void setFinished() {
+		this.isFinished = true;
+	}
 
 	@Override
 	public void run() {

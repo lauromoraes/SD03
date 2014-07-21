@@ -106,6 +106,7 @@ public class Main {
 		Coord coord = new Coord();
 		coord.setupCoord();
 		coord.start_coord();
+		coord.start();
 		coord.mainLoop();
 	}
 	
@@ -113,7 +114,9 @@ public class Main {
 		System.out.println("Host>>>");
 		Host host = new Host();
 		host.setupHost(address, path);
-		
+		host.start_host();
+		host.start();
+		host.mainLoop();
 	}
 
 	public static void main(String[] args) {
@@ -127,7 +130,7 @@ public class Main {
 
 		Main m = new Main();
 		
-		String key[] = {"1", "200.239.134.93:6969"};
+		String key[] = {"1", "200.239.133.35:6969"};
 		switch (key[0]) {
 		case "0":
 			m.coord_app();
