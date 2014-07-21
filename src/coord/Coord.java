@@ -11,11 +11,9 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Scanner;
 
 import op.OpCode;
@@ -36,6 +34,7 @@ public class Coord extends Thread {
 	public Integer state;
 	public Integer n_samples_recieved;
 	public String address;
+	public ArrayList<Integer> limits;
 
 	public Coord() {
 		state = 0;
@@ -83,71 +82,29 @@ public class Coord extends Thread {
 	}
 	
 	public ArrayList<Integer> defineLimits(ArrayList<Integer> list, Integer n_process) {
-		ArrayList<Integer> inter_limits = new ArrayList<Integer>(n_process-1);
-		double s = (double)list.size() / n_process;
+		ArrayList<Integer> inter_limits = new ArrayList<Integer>(n_process);
+		double s = (double)list.size() / (n_process-1);
+		inter_limits.add(Integer.MIN_VALUE);
 		for(int i=1; i < (n_process); i++) {
-			inter_limits.add(list.get((int)(i*s)));
+			Integer index = Math.min(list.size()-1, (int)(i*s));
+			inter_limits.add(list.get(index));
 		}
 		return inter_limits;
 	}
 	
-	@SuppressWarnings("unchecked")
 	public void defineBuckets() {
-		for(String s : mapProcess.keySet()) {
-			String[] fields = s.split(":");
-			String ip = fields[0];
-			Integer port = Integer.parseInt(fields[1]);
-			try {
-				socket = new Socket(ip, port);
-				ObjectInputStream input = new ObjectInputStream( socket.getInputStream() );
-				
-				nProcess += (Integer) input.readObject();
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			}
-		}
-		
-		for(String s : mapProcess.keySet()) {
-			String[] fields = s.split(":");
-			String ip = fields[0];
-			Integer port = Integer.parseInt(fields[1]);
-			try {
-				socket = new Socket(ip, port);
-				ObjectInputStream input = new ObjectInputStream( socket.getInputStream() );
-				
-				ArrayList<Integer> samples = (ArrayList<Integer>) input.readObject();
-				allSamples.addAll(samples);
-				
-				
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			}
-		}
-		
 		Collections.sort(allSamples);
-		ArrayList<Integer> limits = defineLimits(allSamples, nProcess);
-	}
-
-	public void action(Socket s) {
-		try {
-			ObjectInputStream in = new ObjectInputStream(s.getInputStream());
-			try {
-				Object[] o = (Object[])in.readObject();
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
+		limits = defineLimits(allSamples, nProcess);
+		int i = 0;
+		for(String host : mapProcess.keySet()) {
+			for(int j = 0; j < mapProcess.get(host); j++) {
+				System.out.println(i + " - " + limits.get(i) + " - " + host + " - " + j);
+				Integer n = limits.get(i++);
+				mapBuckets.put(n, host);
 			}
-			in.close();
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
+		for(Integer b : mapBuckets.keySet())
+			System.out.println(b + " - " + mapBuckets.get(b));
 	}
 
 	public void mainLoop() {
@@ -204,6 +161,7 @@ public class Coord extends Thread {
 						String host_address = (String)o[1];
 						Integer process = (Integer)o[2];
 						System.out.println("host register: " + host_address + " - " + process);
+						nProcess += process;
 						mapProcess.put(host_address, process);
 						recieved_samples.put(host_address, false);
 					} else {
@@ -226,10 +184,14 @@ public class Coord extends Thread {
 						allSamples.addAll((ArrayList<Integer>)o[2]);
 						recieved_samples.put((String)o[1], true);
 						n_samples_recieved++;
+						System.out.println("n_samples: " + n_samples_recieved);
+						System.out.println("recieved_size: " + recieved_samples.keySet());
 						if(n_samples_recieved == recieved_samples.size()) {
-							System.out.println(allSamples);
+							System.out.println("samples: " + allSamples);
+							state = 2;
+							defineBuckets();
 						}
-						System.out.println("samples: " + allSamples);
+//						System.out.println("samples: " + allSamples);
 						System.out.println("amostras recebidas de: " + (String)o[1]);
 					}
 				} catch (IOException e) {

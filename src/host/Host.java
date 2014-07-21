@@ -124,15 +124,15 @@ public class Host extends Thread {
 					Object[] o = (Object[])in.readObject();
 					in.close();
 					if((OpCode)o[0] == OpCode.START_SAMPLE) {
-						String address = (String)o[1];
+						String coord_address = (String)o[1];
 						
-						Socket s2 = new Socket(address, 6969);
+						Socket s2 = new Socket(coord_address, 6969);
 						ObjectOutputStream out = new ObjectOutputStream(s2.getOutputStream());
 						Object[] response = {OpCode.SEND_SAMPLE, address, samples()};
 						out.writeObject(response);
 						s2.close();
-						
-						System.out.println("sended");
+						state = 1;
+						System.out.println("Sended");
 					} else {
 						System.out.println("Invalid OpCode: " + o[0]);
 					}
@@ -184,7 +184,7 @@ public class Host extends Thread {
 			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
 			ArrayList<Integer> n = samples();
 			Object[] o = {OpCode.SEND_SAMPLE, address, n};
-			out.writeObject(n);
+			out.writeObject(o);
 			out.close();
 			out = null;
 			socket.close();
