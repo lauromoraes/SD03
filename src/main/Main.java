@@ -35,7 +35,7 @@ public class Main {
 	
 	public void genBinFile(int nIntWords) {
 		try {
-			Random r = new Random(547789);
+			Random r = new Random(12344);
 			File f = new File("input.bin");
 			f.delete();
 			f.createNewFile();
@@ -121,6 +121,7 @@ public class Main {
 
 	public static void main(String[] args) {
 		String path = "input.bin";
+		
 
 		System.out.println("Main");
 		for(String a : args) {
@@ -129,6 +130,7 @@ public class Main {
 		System.out.println("-------------");
 
 		Main m = new Main();
+		m.genBinFile(100);
 		
 		String key[] = {"1", "200.239.133.35:6969"};
 		switch (key[0]) {
